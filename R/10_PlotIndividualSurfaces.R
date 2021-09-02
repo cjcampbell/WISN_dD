@@ -7,7 +7,7 @@ if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
 
 # This is specific to my local computer.
 source("~/WISN_dD/.Rprofile")
-NoAm <- readRDS( file.path(wd$bigDataStorage, "NoAm_maps", "NoAm.rds"))
+NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds"))
 
 # Make individual plots.
 df <- maps_df %>% dplyr::filter(method == "OR")

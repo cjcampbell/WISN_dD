@@ -73,11 +73,11 @@ if(download_GADM == TRUE){
 if(reload_isoscapes == TRUE){
   message("reloading isoscapes...")
 
-  # Location of my local isoscape and NoAm boundary directory is stored in wd$bigDataStorage
+  # Location of my local isoscape and NoAm boundary directory is stored in object 'bigDataStorage'
   source("~/WISN_dD/.Rprofile")
 
   NoAm_boundary_aea <- readRDS(
-    file.path(wd$bigDataStorage, "NoAm_maps", "NoAm_boundary_aea.rds")
+    file.path(bigDataStorage, "NoAm_maps", "NoAm_boundary_aea.rds")
     ) %>%
     st_as_sf() %>%
     st_transform(crs = myCRS)
@@ -94,7 +94,7 @@ if(reload_isoscapes == TRUE){
   }
 
   myisoscape <- list()
-  myisoscape$directory          <- file.path(wd$bigDataStorage, "isoscapes")
+  myisoscape$directory          <- file.path(bigDataStorage, "isoscapes")
   myisoscape$path_pattern       <- "66100"
   myisoscape$isoscape_pattern   <- "predkrig.tiff$"
   myisoscape$sd_pattern         <- "stdkrig.tiff$"
