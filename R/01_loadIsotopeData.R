@@ -16,7 +16,8 @@ if(sum(meta$SampleName %in% res$`Sample ID`) != nrow(res)) {
   stop("Sample ID do not match up.")
 }
 
-mydata <- full_join(meta, res, by = c("SampleName" = "Sample ID"))
+mydata <- full_join(meta, res, by = c("SampleName" = "Sample ID")) %>%
+  filter(!is.na(d2H))
 
 # Optionally, check it out and make sure it looks okay.
 # View(mydata)

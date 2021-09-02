@@ -73,7 +73,10 @@ if(download_GADM == TRUE){
 if(reload_isoscapes == TRUE){
   message("reloading isoscapes...")
 
-  NoAm_boundary_aea <- readRDS( file.path(wd$bin, "NoAm_boundary_aea.rds") )
+  # Location of my local isoscape and NoAm boundary directory is stored in wd$bigDataStorage
+  source("~/WISN_dD/.Rprofile")
+
+  NoAm_boundary_aea <- readRDS( file.path(wd$bigDataStorage, "NoAm_maps", "NoAm_boundary_aea.rds") )
 
   # Function to extend/crop/mask by above.
   ECM <- function(rasterLayer){
@@ -87,7 +90,7 @@ if(reload_isoscapes == TRUE){
   }
 
   myisoscape <- list()
-  myisoscape$directory          <- file.path(wd$data, "isoscape")
+  myisoscape$directory          <- file.path(wd$bigDataStorage, "isoscapes")
   myisoscape$path_pattern       <- "66100"
   myisoscape$isoscape_pattern   <- "predkrig.tiff$"
   myisoscape$sd_pattern         <- "stdkrig.tiff$"
