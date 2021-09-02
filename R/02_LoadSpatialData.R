@@ -76,7 +76,11 @@ if(reload_isoscapes == TRUE){
   # Location of my local isoscape and NoAm boundary directory is stored in wd$bigDataStorage
   source("~/WISN_dD/.Rprofile")
 
-  NoAm_boundary_aea <- readRDS( file.path(wd$bigDataStorage, "NoAm_maps", "NoAm_boundary_aea.rds") )
+  NoAm_boundary_aea <- readRDS(
+    file.path(wd$bigDataStorage, "NoAm_maps", "NoAm_boundary_aea.rds")
+    ) %>%
+    st_as_sf() %>%
+    st_transform(crs = myCRS)
 
   # Function to extend/crop/mask by above.
   ECM <- function(rasterLayer){

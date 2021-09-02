@@ -75,4 +75,4 @@ maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
   bind_rows()
 
 # Save.
-saveRDS(maps_df, file = file.path(mapPath, "maps_df.rds"))
+saveRDS(maps_df, file = file.path(wd$bin, "maps_df.rds"))
