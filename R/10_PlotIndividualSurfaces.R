@@ -12,7 +12,7 @@ NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds"))
 # Make individual plots.
 df <- maps_df %>% dplyr::filter(method == "OR")
 
-plotID <- function(ID) {
+plotID <- function(i) {
   p <- dplyr::filter(df, ID == i) %>%
     ggplot() +
     geom_sf(
