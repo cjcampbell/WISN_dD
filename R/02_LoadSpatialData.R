@@ -73,6 +73,7 @@ if(download_GADM == TRUE){
 if(reload_isoscapes == TRUE){
   message("reloading isoscapes...")
 
+<<<<<<< HEAD
   # Location of my local isoscape and NoAm boundary directory is stored in object 'bigDataStorage'
   source("~/WISN_dD/.Rprofile")
 
@@ -81,6 +82,9 @@ if(reload_isoscapes == TRUE){
     ) %>%
     st_as_sf() %>%
     st_transform(crs = myCRS)
+=======
+  NoAm_boundary_aea <- readRDS( file.path(wd$bin, "NoAm_boundary_aea.rds") )
+>>>>>>> 9ce3ac9a7d3ae6bba984411d809863b448f22650
 
   # Function to extend/crop/mask by above.
   ECM <- function(rasterLayer){
@@ -94,7 +98,11 @@ if(reload_isoscapes == TRUE){
   }
 
   myisoscape <- list()
+<<<<<<< HEAD
   myisoscape$directory          <- file.path(bigDataStorage, "isoscapes")
+=======
+  myisoscape$directory          <- file.path(wd$data, "isoscape")
+>>>>>>> 9ce3ac9a7d3ae6bba984411d809863b448f22650
   myisoscape$path_pattern       <- "66100"
   myisoscape$isoscape_pattern   <- "predkrig.tiff$"
   myisoscape$sd_pattern         <- "stdkrig.tiff$"
@@ -132,6 +140,7 @@ if(reload_IUCN_rangemaps == TRUE){
   locationIUCNData <- dir(wd$data, pattern = "redlist_species_data", full.names = T)
 
   # Load IUCN rangemap.
+
   # Convert to simple features object and reproject to myCRS.
   IUCNmaps <-
     locationIUCNData %>%
