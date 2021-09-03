@@ -132,16 +132,16 @@ if(reload_IUCN_rangemaps == TRUE){
   locationIUCNData <- dir(wd$data, pattern = "redlist_species_data", full.names = T)
 
   # Load IUCN rangemap.
+  # Convert to simple features object and reproject to myCRS.
   IUCNmaps <-
     locationIUCNData %>%
-    st_read(layer = "data_0")
-
-  # Convert to simple features object and reproject to myCRS.
-  range_tidy <- IUCNmaps %>%
+    st_read(layer = "data_0") %>%
     st_as_sf(crs = 4326) %>%
     st_transform(crs = myCRS) %>%
     st_simplify(preserveTopology = TRUE, dTolerance = 5000) %>%
-    st_make_valid() %>%
+    st_make_valid()
+
+  range_tidy <- IUCNmaps %>%
     st_buffer(dist = 10e3) %>%
     st_combine()
 
