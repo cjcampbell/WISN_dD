@@ -32,7 +32,6 @@ maps_cropped <- list.files(
 # Also calculate probability quantiles.
 maps_quantile_stack <-
   lapply(1:nlayers(maps_cropped), function(i) {
-    print(i)
     isocat::makeQuantileSurfaces(maps_cropped[[i]])
     }) %>%
   stack()

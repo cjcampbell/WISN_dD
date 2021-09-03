@@ -30,12 +30,14 @@ mydata_transformed$d2H %>% hist
 source("~/WISN_dD/R/03_LoadApplyTransferFunctions.R")
 mydata_transformed %>%
   dplyr::mutate(
-    d2H_1 = (d2H ) * 0.95,
+    d2H_1 = (d2H ) / 0.95,
+    d2H_Sullins_grow = (d2H - 23.57) / 1.16,
+    d2H_Sullins_ann = (d2H - 23.51) / 1.06,
     d2H_2 = (d2H + 20),
-    d2H_3 = (d2H + 20) * 0.95,
-    d2H_4 = (d2H + 20) * 1.36,
-    d2H_5 = (d2H - 5) * 1.9,
-    d2H_6 = (d2H + 74) * 0.57
+    d2H_3 = (d2H + 20) / 0.95,
+    d2H_4 = (d2H + 20) / 1.36,
+    d2H_5 = (d2H - 5) / 1.9,
+    d2H_6 = (d2H + 74) / 0.57
   ) %>%
   dplyr::select_at(vars(starts_with("d2H"))) %>%
   pivot_longer(everything()) %>%
