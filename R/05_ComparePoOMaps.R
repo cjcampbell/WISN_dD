@@ -60,7 +60,7 @@ rect.hclust(clustered_simmatrix, k = 6, border = 2:8)
 
 # Manually decide how many clusters to cut into. -----------------------
 # This part requires manual input!
-my_k <- 6
+my_k <- 4
 
 # Cut trees into groups ---------------------------------------------------
 # Load data.
