@@ -22,7 +22,7 @@ breeding <- IUCNmaps %>% filter(SEASONAL %in% c(1,2))
 isoscape_breeding <- mask(myisoscape$isoscape, breeding)
 isoscape_breeding[] %>% hist
 
-isoscape_breeding_feathers <- (isoscape_breeding*0.95)-23
+isoscape_breeding_feathers <- (isoscape_breeding*1.15)-23.57
 isoscape_breeding_feathers[] %>% hist
 mydata_transformed$d2H %>% hist
 
@@ -41,7 +41,7 @@ mydata_transformed %>%
   ) %>%
   dplyr::select_at(vars(starts_with("d2H"))) %>%
   pivot_longer(everything()) %>%
-  rbind(., data.frame(name = "isoscape", value = isoscape_breeding[])) %>%
+  rbind(., data.frame(name = "isoscape_breeding", value = isoscape_breeding[])) %>%
   ggplot() +
   geom_histogram(aes(value)) +
   facet_wrap(~name, ncol = 1, scales = "free_y") +
