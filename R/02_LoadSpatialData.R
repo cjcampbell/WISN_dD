@@ -95,9 +95,9 @@ if(reload_isoscapes == TRUE){
 
   myisoscape <- list()
   myisoscape$directory          <- file.path(bigDataStorage, "isoscapes")
-  myisoscape$path_pattern       <- "66098"
-  myisoscape$isoscape_pattern   <- "predkrig.tiff$"
-  myisoscape$sd_pattern         <- "stdkrig.tiff$"
+  myisoscape$path_pattern       <- c( "GlobalPrecipGS" )
+  myisoscape$isoscape_pattern   <- c( "d2h_GS.tif"     )
+  myisoscape$sd_pattern         <- c( "d2h_se_GS.tif"  )
 
   myisoscape$isoscape <- list.files(
     myisoscape$directory, pattern =  myisoscape$isoscape_pattern,
