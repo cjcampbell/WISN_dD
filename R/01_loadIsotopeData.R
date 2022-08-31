@@ -23,6 +23,9 @@ mydata <- full_join(meta, res, by = c("SampleName" = "Sample ID")) %>%
 # View(mydata)
 
 
+
+
+
 # Georeferencing ----------------------------------------------------------
 
 # We conducted automatic georefencing followed by manual validation.
@@ -121,3 +124,16 @@ df1 <- mydata %>%
   distinct()
 
 mydata <- left_join(mydata, df1, by = c("Location", "County"))
+
+
+# Combine with new dataset (Aug 30 2022) ---------------------------------------
+
+new <- list.files(
+  path = wd$data, pattern = "FWC_WiSnFeathers_4.13.22.xlsx",
+  full.names = TRUE, recursive = T) %>%
+  read_excel() %>%
+  dplyr::rename(lon = Lon, lat= Lat)
+
+mydata <- full_join(mydata, new)
+
+
