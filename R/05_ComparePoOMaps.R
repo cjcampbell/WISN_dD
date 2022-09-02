@@ -12,7 +12,7 @@ maps_cropped  <- list.files(
 
 (simmatrix <- isocat::simmatrixMaker(
     maps_cropped,
-    nClusters = FALSE,
+    nClusters = 2,
     csvSavePath = FALSE
     )
 )
@@ -38,25 +38,25 @@ plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of 
 
 # Plot trees.
 plot(clustered_simmatrix, cex = 0.6)
-rect.hclust(clustered_simmatrix, k = 6, border = 2:8)
+rect.hclust(clustered_simmatrix, k = 4, border = 2:8)
 
 
-# # # Estimate the latitude of highest probability of origin for each surface ------
-# mydata_transformed <- readRDS( file.path(wd$bin, "mydata_transformed.rds") )
-# maps_cropped_df    <- readRDS( file.path(wd$bin, "maps_df.rds") ) %>%
-#   dplyr::filter(method == "raw")
-#
-# ave_lat <- lapply(1:nrow(mydata_transformed), function(i){
-#   ex <- mydata_transformed[i, ]
-#   u1 <- na.omit( maps_cropped_df[ maps_cropped_df$ID == ex$SampleName , ] )
-#   lats <- base::sample(size = 1000, x = u1$y, replace = TRUE, prob = u1$value)
-#   mean(lats)
-# } ) %>%
-#   unlist
-#
-# mydata_aveLat <- mydata_transformed %>% dplyr::mutate(ave_lat = ave_lat)
-#
-# saveRDS(mydata_aveLat, file = file.path(wd$bin, "mydata_aveLat.rds"))
+# # Estimate the latitude of highest probability of origin for each surface ------
+mydata_transformed <- readRDS( file.path(wd$bin, "mydata_transformed.rds") )
+maps_cropped_df    <- readRDS( file.path(wd$bin, "maps_df.rds") ) %>%
+  dplyr::filter(method == "raw")
+
+ave_lat <- lapply(1:nrow(mydata_transformed), function(i){
+  ex <- mydata_transformed[i, ]
+  u1 <- na.omit( maps_cropped_df[ maps_cropped_df$ID == ex$SampleName , ] )
+  lats <- base::sample(size = 1000, x = u1$y, replace = TRUE, prob = u1$value)
+  mean(lats)
+} ) %>%
+  unlist
+
+mydata_aveLat <- mydata_transformed %>% dplyr::mutate(ave_lat = ave_lat)
+
+saveRDS(mydata_aveLat, file = file.path(wd$bin, "mydata_aveLat.rds"))
 
 # Manually decide how many clusters to cut into. -----------------------
 # This part requires manual input!
