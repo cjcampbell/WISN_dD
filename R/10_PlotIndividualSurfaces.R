@@ -2,6 +2,7 @@
 library(dplyr)
 library(sf)
 library(ggpubr)
+library(ggstar)
 
 if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
 
@@ -9,8 +10,7 @@ if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
 source("~/WISN_dD/.Rprofile")
 NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds"))
 
-
-
+range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
 
 if(!exists("NoAm_boundary_aea")) {
   NoAm_boundary_aea <- readRDS( file.path(wd$bin, "NoAm_boundary_aea.rds") )
@@ -30,6 +30,11 @@ IUCNmaps <-
 
 breeding <- IUCNmaps %>% filter(SEASONAL %in% c(1,2))
 other <- IUCNmaps %>% filter(SEASONAL %in% c(3,4))
+
+mydata_transformed <- readRDS( file.path(wd$bin, "mydata_transformed.rds") )
+pts <- as.data.frame(sf::sf_project(pts = as.matrix(mydata_transformed[,c("lon", "lat")]), from = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ", to = myCRS))
+names(pts) <- c("lon_aea", "lat_aea")
+mydata_transformed <- data.frame(mydata_transformed, pts )
 
 
 # Make individual plots.
@@ -54,12 +59,18 @@ plotID <- function(i, save = TRUE) {
             fill = NA, color = "black", size = 1) +
     geom_sf(other, mapping = aes(),
             fill = "grey50", alpha = 0.5, color = NA, size = 1) +
+    geom_star(
+      data = dplyr::filter(mydata_transformed, SampleName == i),
+      mapping = aes(x=lon_aea, y = lat_aea),
+      fill = "white"
+      ) +
     coord_sf(
       xlim = c(extent(range_raster)[1], extent(range_raster)[2]),
       ylim = c(extent(range_raster)[3], extent(range_raster)[4])
     ) +
     theme_bw() +
     theme(
+      legend.position = c(0.2,0.2),
       strip.background = element_blank(),
       axis.title = element_blank()
     ) +
@@ -85,6 +96,8 @@ mydata_transformed %>%
 
 
 # Make aggregate surfaces -------------------------------------------------
+load(file.path(wd$bin, "mydata_clustered.Rdata"))
+
 
 mdf <- full_join(mydata_transformed, mydata_clustered)
 
@@ -108,7 +121,7 @@ aggSurfaces <- lapply(unique(mdf$OriginCluster), function(cl){
   bind_rows()
 
 
-aggSurfaces %>%
+p_aggSurfaces <- aggSurfaces %>%
   ggplot() +
   geom_sf(
     NoAm, mapping=aes(),
@@ -135,3 +148,5 @@ aggSurfaces %>%
     axis.title = element_blank()
   ) +
   facet_wrap(~OriginCluster)
+
+ggsave(plot = p_aggSurfaces, filename = file.path(wd$figs, "aggSurfaces.png"))
