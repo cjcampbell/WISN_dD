@@ -8,6 +8,8 @@ load( file.path(wd$bin, "my_isoscapes.RData") )
 mapPath <- file.path( wd$bin, "maps")
 if(!dir.exists(mapPath)) dir.create(mapPath)
 
+range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
+
 # Create maps. -----------------------------------------------------------
 
 isocat::isotopeAssignmentModel(
@@ -55,7 +57,7 @@ wd$tmp_df <- file.path(wd$bin,"tmp_df")
 if(!dir.exists(wd$tmp_df) ) dir.create(wd$tmp_df)
 
 maps_cropped_df_list <- pbmcapply::pbmclapply(
-  1:nlayers(maps_cropped), mc.cores = 4, function(i){
+  1:nlayers(maps_cropped), mc.cores = 2, function(i){
     mdf <- stack(maps_cropped[[i]], maps_quantile_stack[[i]], maps_odds_stack[[i]]) %>%
       # So raster::as.data.frame has given me TWO big troubles here.
       # Some weird bug in raster::data.frame is messing up column names when long = TRUE.
