@@ -138,6 +138,7 @@ if(reload_IUCN_rangemaps == TRUE){
     locationIUCNData %>%
     st_read(layer = "data_0") %>%
     st_as_sf(crs = 4326) %>%
+    dplyr::filter(SEASONAL %in% c(1,2)) %>%
     st_transform(crs = myCRS) %>%
     st_simplify(preserveTopology = TRUE, dTolerance = 5000) %>%
     st_make_valid()
