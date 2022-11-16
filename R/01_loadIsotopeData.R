@@ -90,7 +90,7 @@ if(rerunAutomaticGeoreferencing) {
 
 } else {
 
-  # Load manually vallidated georeferencing.
+  # Load manually validated georeferencing.
   geo_path <- list.files(
     path = wd$data, pattern = "georeferenced_updated9.22.21.xlsx$",
     full.names = TRUE, recursive = T)
