@@ -2,33 +2,9 @@
 library(data.table)
 rerun <- FALSE
 
-mydata_transformed_ID <- readRDS( file.path(wd$bin, "mydata_transformed.rds") ) %>%
-  group_by(lon, lat) %>%
-  dplyr::mutate(sampleSiteID = cur_group_id())
+wd$tmp_df <- file.path(wd$bin,"tmp_df")
 
-# Assemble lat/lon coordinates --------------------------------------------
-
-# Because of how distance is most accurately measured (e.g., by distGeo), I'm
-# going to convert my surface coordinates (currently in equal area projections)
-# to lat/lon.
-
-# All maps are projected across the same extent, so just load a random one.
-coords_aea <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
-  sample(1) %>%
-  lapply(readRDS) %>%
-  bind_rows() %>%
-  dplyr::select(x,y) %>%
-  distinct()
-# Get unique coordinates to convert
-coords_dd <- coords_aea %>%
-  SpatialPointsDataFrame(coords = .[, 1:2], proj4string = CRS(myCRS)) %>%
-  st_as_sf() %>%
-  st_transform(crs = 4326) %>%
-  st_coordinates() %>%
-  as.data.frame %>%
-  dplyr::rename(x_dd = X, y_dd = Y) %>%
-  data.frame(., coords_aea)
-
+mydata_transformed <- readRDS( file.path(wd$bin, "mydata_transformed.rds") )
 
 # Functions ----------------------------------------------------------------
 # Function that extracts distance and bearing relating each potential cell of
@@ -55,34 +31,53 @@ getDistanceDirection <- function(
 
 }
 
-# Apply -------------------------------------------------------------------
+# Assemble lat/lon coordinates --------------------------------------------
 
-# Measure distance and direction from every cell to each sampling location.
+# Because of how distance is most accurately measured (e.g., by distGeo), I'm
+# going to convert my surface coordinates (currently in equal area projections)
+# to lat/lon.
+
+rerun <- FALSE
+
+whichFiles <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T)
+
 wd$tmp_dist <- file.path(wd$bin,"tmp_dist")
 if(!dir.exists(wd$tmp_dist) ) dir.create(wd$tmp_dist)
 if(length(list.files(wd$tmp_dist)) > 1 ) stop("Files already exist in this directory!")
 
-# For each unique sample site, find distance and direction from each potential
-# origin to that sample site.
+for( x in whichFiles ) {
 
-toCombos <- mydata_transformed_ID %>%
-  dplyr::select(sampleSiteID, lat,lon) %>%
-  distinct() %>%
-  arrange(sampleSiteID)
+  s1 <- x %>%
+    lapply(readRDS) %>%
+    bind_rows() %>%
+    dplyr::filter(method == "raw")
 
-for(i in 1:nrow(toCombos)) {
-  myfileLocation <- file.path(wd$tmp_dist, paste0("distDir_site_",i, ".csv"))
-  if(rerun | !file.exists(myfileLocation)) {
+  myfileLocation <- file.path(wd$tmp_dist, paste0("distDir_",s1$ID[1], ".csv"))
 
-    print(paste("Working on", i, "of", nrow(toCombos)))
+  if( rerun | !file.exists(myfileLocation) ) {
 
-    mydata_FromTo <- data.frame(coords_dd, toCombos[i,])
+    print(paste("Working on", s1$ID[1]))
+
+    coords_dd <- s1 %>%
+      SpatialPointsDataFrame(coords = .[, 1:2], proj4string = CRS(myCRS)) %>%
+      st_as_sf() %>%
+      st_transform(crs = 4326) %>%
+      st_coordinates() %>%
+      as.data.frame %>%
+      dplyr::rename(x_dd = X, y_dd = Y) %>%
+      data.frame(., s1)
+
+    mydata_FromTo <- left_join(
+      coords_dd,
+      dplyr::select(mydata_transformed, SampleName, lat, lon),
+      by = c("ID" = "SampleName")
+      )
 
     mdf <- pbmcapply::pbmclapply( # mclapply, alternatively
       FUN = getDistanceDirection, mc.cores = parallel::detectCores() - 1,
       1:nrow(mydata_FromTo),
       dataframe =  mydata_FromTo,
-      fromLat = "lat", toLat = "y_dd", fromLon = "lon", toLon = "x_dd",
+      fromLat = "y_dd", toLat = "lat", fromLon = "x_dd", toLon = "lon",
       getDistance = TRUE, getDirection = TRUE
     ) %>%
       lapply(as.data.frame) %>%
@@ -90,8 +85,60 @@ for(i in 1:nrow(toCombos)) {
       data.frame(mydata_FromTo, .)
 
     fwrite(mdf, file = myfileLocation )
-
+  } else {
+    print(paste("Already done with", s1$ID[1]))
   }
 }
 
 
+
+# Extract statistics for each individual. ---------------------------------
+
+csumThreshold <- 0.25
+
+statsOut <- list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T) %>%
+  lapply(., function(x){
+    df <- fread(x)
+    # Find minimum distance ----
+    ## Convert to cumulative sum
+    df <- df %>%
+      arrange(value) %>%
+      mutate(
+        csum = cumsum(value),
+        orig = case_when(csum >= csumThreshold ~ 1, TRUE ~ 0)
+        )
+    ## Find minimum distance traveled from nearest point over cumulative sum threshold.
+    minDist <- df %>%
+      dplyr::filter(orig == 1) %>%
+      dplyr::arrange(dist_km) %>%
+      slice(1)
+    ## Extract details ready for plotting.
+    sampleSiteLocation <-
+      sf::sf_project(from = st_crs(4326), to = myCRS, minDist[,c("lon", "lat")])
+    minDistDeets <- data.frame(
+      minDist,
+      lon_aea = sampleSiteLocation[1],
+      lat_aea = sampleSiteLocation[2]
+    )
+
+    # Define potential region of origin ----
+    set.seed(42)
+    fromWest <- df %>%
+      sample_n(weight = value, size = 1e6, replace = T) %>%
+      group_by(x,y, x_dd, y_dd) %>%
+      dplyr::summarise(n=n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(isEast = case_when(x_dd > -100 ~ 1, TRUE ~ 0)) %>%
+      dplyr::group_by(isEast) %>%
+      dplyr::summarise(propSim = sum(n) / 1e6) %>%
+      dplyr::filter(isEast == 0) %>%
+      dplyr::select(propSim) %>%
+      unlist
+
+    minDistDeets <- data.frame(minDistDeets, probWestOrigin = fromWest)
+    return(minDistDeets)
+
+  }) %>%
+  bind_rows()
+
+fwrite(statsOut, file = file.path(wd$bin, "distDirStats.csv"), row.names = F)
