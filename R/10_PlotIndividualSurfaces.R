@@ -8,7 +8,11 @@ if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
 
 # This is specific to my local computer.
 source("~/WISN_dD/.Rprofile")
-NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds"))
+NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds")) %>%
+  st_transform(myCRS)
+countries <- rnaturalearth::countries110 %>%
+  st_as_sf() %>%
+  st_transform(myCRS)
 
 range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
 
@@ -43,9 +47,12 @@ df <- maps_df %>% dplyr::filter(method == "OR")
 plotID <- function(i, save = TRUE) {
   p <- dplyr::filter(df, ID == i) %>%
     ggplot() +
+    # geom_sf(
+    #   countries, mapping=aes(),
+    #   fill = "white", color = "grey20", size = 0.25) +
     geom_sf(
       NoAm, mapping=aes(),
-      fill = "white", color = "grey20", size = 0.25) +
+      fill = "grey90", color = "grey20", size = 0.25) +
     geom_tile(mapping=aes(x=x,y=y,fill=value, color = value)) +
     scale_fill_viridis_c(
       "Odds of origin",
@@ -58,15 +65,15 @@ plotID <- function(i, save = TRUE) {
     geom_sf(breeding, mapping = aes(),
             fill = NA, color = "black", size = 1) +
     geom_sf(other, mapping = aes(),
-            fill = "grey50", alpha = 0.5, color = NA, size = 1) +
+            fill = "grey40", alpha = 0.5, color = NA, size = 1) +
     geom_star(
       data = dplyr::filter(mydata_transformed, SampleName == i),
       mapping = aes(x=lon_aea, y = lat_aea),
-      fill = "white"
+      fill = "#E9D539FF", color = "black", size = 3
       ) +
     coord_sf(
-      xlim = c(extent(range_raster)[1], extent(range_raster)[2]),
-      ylim = c(extent(range_raster)[3], extent(range_raster)[4])
+      xlim = c(extent(range_raster)[1]+1e6, extent(range_raster)[2]-2.4e6),
+      ylim = c(extent(range_raster)[3]+3.5e6, extent(range_raster)[4]-1.8e6)
     ) +
     theme_bw() +
     theme(
@@ -75,6 +82,7 @@ plotID <- function(i, save = TRUE) {
       axis.title = element_blank()
     ) +
     ggtitle(i)
+
   if(save == TRUE){
     ggsave(p, filename = file.path(wd$figs, paste0("map_", i, ".png")))
   } else {
