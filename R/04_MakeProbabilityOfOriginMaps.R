@@ -32,13 +32,13 @@ maps_cropped <- list.files(
   raster::stack()
 
 # Also calculate probability quantiles.
-maps_quantile_stack <-
+maps_cumulativeSum_stack <-
   lapply(1:nlayers(maps_cropped), function(i) {
-    isocat::makeQuantileSurfaces(maps_cropped[[i]])
+    isocat::makecumsumSurface(maps_cropped[[i]])
     }) %>%
   stack()
-names(maps_quantile_stack) <- paste0(names(maps_cropped), "_quantile")
-writeRaster(maps_quantile_stack, filename = file.path(mapPath, "quantileProbabilityMaps.grd"), overwrite = TRUE)
+names(maps_cumulativeSum_stack) <- paste0(names(maps_cropped), "_csum")
+writeRaster(maps_cumulativeSum_stack, filename = file.path(mapPath, "maps_cumulativeSum_stackProbabilityMaps.grd"), overwrite = TRUE)
 
 # And odds ratios.
 maps_odds_stack <-
@@ -58,7 +58,7 @@ if(!dir.exists(wd$tmp_df) ) dir.create(wd$tmp_df)
 
 maps_cropped_df_list <- pbmcapply::pbmclapply(
   1:nlayers(maps_cropped), mc.cores = 2, function(i){
-    mdf <- stack(maps_cropped[[i]], maps_quantile_stack[[i]], maps_odds_stack[[i]]) %>%
+    mdf <- stack(maps_cropped[[i]], maps_cumulativeSum_stack[[i]], maps_odds_stack[[i]]) %>%
       # So raster::as.data.frame has given me TWO big troubles here.
       # Some weird bug in raster::data.frame is messing up column names when long = TRUE.
       # AND if na.rm = TRUE, it seems to throw out *any* cell with an NA, not just a particular cell with an NA.
@@ -71,9 +71,9 @@ maps_cropped_df_list <- pbmcapply::pbmclapply(
     saveRDS(mdf, file = file.path(wd$tmp_df, paste0("df_list_", i, ".rds")))
 })
 
-maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
-  lapply(readRDS) %>%
-  bind_rows()
-
-# Save.
-saveRDS(maps_df, file = file.path(wd$bin, "maps_df.rds"))
+# maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
+#   lapply(readRDS) %>%
+#   bind_rows()
+#
+# # Save.
+# saveRDS(maps_df, file = file.path(wd$bin, "maps_df.rds"))
