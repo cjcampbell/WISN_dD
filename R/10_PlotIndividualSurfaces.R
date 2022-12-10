@@ -4,7 +4,7 @@ library(sf)
 library(ggpubr)
 library(ggstar)
 
-if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
+#if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
 
 # This is specific to my local computer.
 source("~/WISN_dD/.Rprofile")
@@ -158,3 +158,62 @@ p_aggSurfaces <- aggSurfaces %>%
   facet_wrap(~OriginCluster)
 
 ggsave(plot = p_aggSurfaces, filename = file.path(wd$figs, "aggSurfaces.png"))
+
+
+
+
+# Make min dist plot ------------------------------------------------------
+wd$tmp_df <- file.path(wd$bin,"tmp_df")
+df <- list.files(wd$tmp_df, full.names = T)[100] %>%
+  readRDS() %>%
+  dplyr::filter(method == "OR")
+
+allResults <- data.table::fread(file.path(wd$bin, "allResults.csv"))
+md <- allResults %>%
+  dplyr::filter(SampleName == df$ID[1])
+
+
+p <- df %>%  ggplot() +
+  # geom_sf(
+  #   countries, mapping=aes(),
+  #   fill = "white", color = "grey20", size = 0.25) +
+  geom_sf(
+    NoAm, mapping=aes(),
+    fill = "grey90", color = "grey20", size = 0.25) +
+  geom_tile(mapping=aes(x=x,y=y,fill=value, color = value)) +
+  scale_fill_viridis_c(
+    "Odds of origin",
+    option = "turbo", direction = 1
+  ) +
+  scale_color_viridis_c(
+    "Odds of origin",
+    option = "turbo", direction = 1
+  ) +
+  geom_sf(breeding, mapping = aes(),
+          fill = NA, color = "black", size = 1) +
+  geom_sf(other, mapping = aes(),
+          fill = "grey40", alpha = 0.5, color = NA, size = 1) +
+  geom_segment(
+    data = md,
+    mapping = aes(x = x, y= y, xend = lon_aea, yend = lat_aea),
+    arrow = arrow(length = unit(0.5, "cm"))
+  ) +
+  geom_star(
+    data = md,
+    mapping = aes(x=lon_aea, y = lat_aea),
+    fill = "#E9D539FF", color = "black", size = 3
+  ) +
+  coord_sf(
+    xlim = c(extent(range_raster)[1]+1e6, extent(range_raster)[2]-2.4e6),
+    ylim = c(extent(range_raster)[3]+3.5e6, extent(range_raster)[4]-1.8e6)
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = c(0.2,0.2),
+    strip.background = element_blank(),
+    axis.title = element_blank()
+  ) +
+  ggtitle(df$ID[1])
+ggsave(p, file = file.path(wd$figs, paste0("map_line_", df$ID[1], ".png")))
+
+
