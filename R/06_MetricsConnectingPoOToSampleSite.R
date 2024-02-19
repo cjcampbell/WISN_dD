@@ -142,3 +142,75 @@ statsOut <- list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T) 
   bind_rows()
 
 fwrite(statsOut, file = file.path(wd$bin, "distDirStats.csv"), row.names = F)
+
+
+# Some plots --------------------------------------------------------------
+
+for(x in list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T)[c(3, 107, 323)]) {
+    df <- fread(x)
+    # Find minimum distance ----
+    ## Convert to cumulative sum
+    df <- df %>%
+      arrange(value) %>%
+      mutate(
+        csum = cumsum(value),
+        orig = case_when(csum >= csumThreshold ~ 1, TRUE ~ 0)
+      )
+    ## Find minimum distance traveled from nearest point over cumulative sum threshold.
+    minDist <- df %>%
+      dplyr::filter(orig == 1) %>%
+      dplyr::arrange(dist_km) %>%
+      slice(1)
+    ## Extract details ready for plotting.
+    sampleSiteLocation <-
+      sf::sf_project(from = st_crs(4326), to = myCRS, minDist[,c("lon", "lat")])
+    minDistDeets <- data.frame(
+      minDist,
+      lon_aea = sampleSiteLocation[1],
+      lat_aea = sampleSiteLocation[2]
+    )
+
+    # Define potential region of origin ----
+    set.seed(42)
+    deets <- df %>%
+      sample_n(weight = value, size = 1e6, replace = T) %>%
+      group_by(x,y, x_dd, y_dd) %>%
+      dplyr::summarise(n=n()) %>%
+      as.data.frame()
+
+    wrld <- rnaturalearth::countries110 %>%
+      st_as_sf() %>%
+      st_transform(crs = myCRS)
+
+    myline <- matrix(
+      data = c(-100, -100, 0, 90),
+      byrow = F, nrow = 2) %>%
+      st_linestring() %>%
+      st_sfc(crs = 4326) %>%
+      st_transform(crs = myCRS)
+
+    allotmentDeets <- deets %>%
+      dplyr::mutate(isEast = case_when(x_dd > -100 ~ 1, TRUE ~ 0)) %>%
+      dplyr::group_by(isEast) %>%
+      dplyr::summarise(propSim = sum(n) / 1e6) %>%
+      dplyr::mutate(
+        propSim = signif(propSim, 2),
+        xposition = case_when(isEast == 1 ~ 8e5, TRUE ~ -8e5)
+      )
+
+    p <- ggplot() +
+      geom_sf(wrld, mapping = aes(), fill = "white", size = 0.5) +
+      geom_tile(deets, mapping = aes(x=x, y = y, color = n, fill = n)) +
+      geom_sf(myline, mapping = aes(), color = "darkorange2") +
+      geom_label(allotmentDeets, mapping = aes(x = xposition, label = propSim), y = 40e5, size = 12, color = "darkorange2", hjust = 0.5) +
+      coord_sf(
+        xlim = c(min(deets$x), max(deets$x)),
+        ylim = c(min(deets$y), max(deets$y))
+        ) +
+      scale_color_viridis_c(option = "mako") +
+      scale_fill_viridis_c( option = "mako") +
+      theme(axis.title = element_blank())
+
+    ggsave(p, file = file.path(wd$figs, paste0("sim_", df$ID[1], ".png")))
+
+  }

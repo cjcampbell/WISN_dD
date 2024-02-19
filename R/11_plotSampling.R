@@ -1,4 +1,5 @@
 library(data.table)
+library(terra)
 
 allResults <- fread(file.path(wd$bin, "allResults.csv")) %>%
   dplyr::mutate(
@@ -65,8 +66,8 @@ if(!file.exists( file.path(wd$bin, "wetlandRast.tif") )) {
 
   # Rasterize wetland data.
   library(terra)
-  r <- rast(nrows = 1500, ncols = 1500, crs = myCRS , xmin = inset_xlim[1], xmax = inset_xlim[2], ymin = inset_ylim[1], ymax = inset_ylim[2])
-  rasterize(wet_all, r, field = "WETLAND_TY", filename = file.path(wd$bin, "wetlandRast.tif"))
+  r <- rast(nrows = 3000, ncols = 3000, crs = myCRS , xmin = inset_xlim[1], xmax = inset_xlim[2], ymin = inset_ylim[1], ymax = inset_ylim[2])
+  rasterize(wet_all, r, field = "WETLAND_TY", filename = file.path(wd$bin, "wetlandRast.tif"), overwrite = T)
 
 } else {
  if(!exists("wet_rast")) {
@@ -148,7 +149,7 @@ main_map <- ggplot() +
   geom_sf(dplyr::filter(IUCNmaps, SEASONAL %in% c(1)), mapping = aes(), alpha = 0.5, color = seasoncolors[3], fill = seasoncolors[3]) +
   geom_text(mapping = aes(x=0, y = 1.5e6),      label = "Breeding",    color = seasoncolors[1], hjust = 0.5, size = 4) +
   geom_text(mapping = aes(x=0, y = -0.5e6),     label = "Nonbreeding", color = seasoncolors[2], hjust = 0.5, size = 4) +
-  geom_text(mapping = aes(x=-1.5e6, y = 0.5e6), label = "Year-round",  color = seasoncolors[3], hjust = 0.5, size = 4) +
+  geom_text(mapping = aes(x=-1.48e6, y = 0.5e6), label = "Year-round",  color = seasoncolors[3], hjust = 0.5, size = 4) +
   coord_sf(
     xlim = c(-4.5e6, 4.5e6),
     ylim = c(-3.8e6, 4e6)
@@ -171,7 +172,13 @@ main_map <- ggplot() +
   )
 
 
-# Combine -----------------------------------------------------------------
+# Load image --------------------------------------------------------------
+
+library(jpeg)
+snipePhoto <- magick::image_read("data/Photo 278588771, (c) Andrew Thomas, some rights reserved (CC BY-NC), uploaded by Andrew Thomas_cropped.jpeg")
+photo1 <- draw_image(snipePhoto)
+
+# Combine, no photo-----------------------------------------------------------------
 
 library(cowplot)
 
@@ -189,3 +196,55 @@ togetherMap <- ggdraw(insetMap) +
   )
 
 ggsave(togetherMap, file= file.path(wd$figs, "samplingmap.png"), width = 6, height = 4, dpi = 400)
+
+
+
+# Add photo ---------------------------------------------------------------
+
+togetherMap2 <- plot_grid(
+  {ggdraw() + photo1},
+  {
+    ggdraw(insetMap) +
+      draw_plot(
+        main_map,
+        x = -0.05, y = -0.05,
+        width  = 0.5, height = 0.55
+      )
+  }
+  ) +
+  draw_plot_label(
+    c("A",  "C", "B"),
+    c(0.05, 0.48, 0.50),
+    c(0.99, 0.44, 0.99),
+    size = 12
+  )
+
+ggsave(togetherMap2, file= file.path(wd$figs, "samplingmap2.png"), width = 8, height = 4, dpi = 400)
+
+
+
+# Extra analysis: identify countries in nonbreeding range -----------------
+
+main_map +
+  geom_sf_label(data = countries, aes(label = name))
+
+
+st_intersection(countries, IUCNmaps) %>%
+  group_by(sovereignt) %>%
+  slice(1) %>%
+  View()
+
+# How many Canadian provinces?
+can <- geodata::gadm("CAN", level = 1, path = "tmp") %>%
+  st_as_sf() %>%
+  st_transform(crs = myCRS) %>%
+  st_simplify(preserveTopology = TRUE, dTolerance = 5000) %>%
+  st_make_valid()
+
+st_intersection(can, IUCNmaps) %>%
+  group_by(NAME_1) %>%
+  slice(1)
+
+main_map +
+  geom_sf(can, mapping = aes(), fill = NA) +
+  geom_sf_label(can, mapping = aes(label = NAME_1))

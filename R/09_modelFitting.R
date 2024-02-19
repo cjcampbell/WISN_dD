@@ -10,7 +10,10 @@ allResults <- fread(file.path(wd$bin, "allResults.csv")) %>%
       probWestOrigin >= 0.8 ~ 1,
       probWestOrigin <= 0.2 ~ 0,
       TRUE ~ as.numeric(NA)
-      )
+      ),
+    yday = as.numeric(yday(Date)),
+    yday2 = case_when(yday <= 200 ~ (yday + 200), TRUE ~ yday),
+    month = as.numeric(month(Date))
   )
 
 ## Do definitive east/west origins have a clear relationship w sampling location?
@@ -62,8 +65,6 @@ p_together <- ggdraw(p_map) +
 ggsave(p_together, file = file.path(wd$figs, "originMap.png"))
 
 
-
-
 # Summarize distances traveled ---------
 allResults %>%
   dplyr::mutate(westOrigin = as.character(westOrigin)) %>%
@@ -106,6 +107,11 @@ allResults %>%
 ggsave(file.path(wd$figs, "lat-v-MinDist.png"))
 
 
+allResults %>%
+  ggstatsplot::ggbetweenstats(y = dist_km, x = westOrigin)
+mean(allResults$dist_km, na.rm = T)
+sd(allResults$dist_km, na.rm = T)
+summary(allResults$dist_km, na.rm = T)
 
 # boxplots ----------------------------------------------------------------
 
@@ -130,6 +136,7 @@ ggstatsplot::ggbetweenstats(
     ggplot2::xlab("Collection year")
     )
 )
+
 
 ggstatsplot::ggbetweenstats(
   data = df, y = d2H, x = OriginCluster,
@@ -171,9 +178,6 @@ set.seed(42); allResults %>%
     axis.ticks = element_line(),
     panel.grid = element_blank()
   )
-
-
-
 
 ggstatsplot::ggbetweenstats(
   data = allResults, y = dist_km, x = OriginCluster,
@@ -240,5 +244,47 @@ allResults %>%
   pivot_wider(names_from = winter, values_from = n) %>%
   dplyr::select(-OriginCluster) %>%
   chisq.test()
+
+
+# d2H v sample Lat --------------------------------------------------------
+
+# d2H v lat
+m1 <- lm(data = allResults, d2H ~ lat)
+summary(m1)
+confint(m1, "lat")
+library(sjPlot)
+plot_model(m1, type = "pred")
+
+ggstatsplot::ggcoefstats(m1)
+
+# distance v. latitude.
+# This is expected (~5% of variation in dist_km is explained by sampling latitude)
+# and frankly, circular (since dist_km is calculated with respect to sampling location).
+# So, good to know, but probably not worth reporting.
+m2 <- lm(data = allResults, dist_km ~ lat)
+summary(m2)
+plot_model(m2, type = "pred")
+
+
+ggplot(allResults) +
+  aes(x=lat, y= dist_km) +
+  geom_point() +
+  stat_smooth(method = "lm")
+
+
+
+# d2H v month of sampling -------------------------------------------------
+
+m3 <- lm(data = allResults, d2H ~ yday2)
+summary(m3)
+confint(m3, "yday2")
+plot_model(m3, type = "pred")
+ggstatsplot::ggcoefstats(m3)
+
+# Quick check of month
+ggbetweenstats(data = allResults, y = d2H, x = month)
+
+
+
 
 

@@ -68,7 +68,8 @@ maps_cropped_df_list <- pbmcapply::pbmclapply(
       tidyr::pivot_longer(-c("x", "y"), names_to = "layer", values_to = "value") %>%
       dplyr::filter(!is.na(value))  %>%
       tidyr::separate(col = layer, into = c("ID", "method"), sep = "_(?=[^_]+$)")
-    saveRDS(mdf, file = file.path(wd$tmp_df, paste0("df_list_", i, ".rds")))
+    ID <- mdf$ID[1]
+    fwrite(mdf, file = file.path(wd$bin, "maps", paste0("df_list_", ID, ".csv")), row.names = F)
 })
 
 # maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
@@ -77,3 +78,10 @@ maps_cropped_df_list <- pbmcapply::pbmclapply(
 #
 # # Save.
 # saveRDS(maps_df, file = file.path(wd$bin, "maps_df.rds"))
+
+# wd$tmp_df %>%
+#   list.files(full.names = T) -> mf
+# lapply(mf, function(x) {
+#   out <- readRDS(x)
+#   fwrite(out, file = file.path(wd$bin, "maps", paste0("df_list_", out$ID[1],".csv")), row.names = F)
+# })

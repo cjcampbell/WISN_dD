@@ -42,10 +42,15 @@ mydata_transformed <- data.frame(mydata_transformed, pts )
 
 
 # Make individual plots.
-df <- maps_df %>% dplyr::filter(method == "OR")
+df_OR <- maps_df %>% dplyr::filter(method == "OR")
+df_cs <- maps_df %>% dplyr::filter(method == "raw") %>%
+  dplyr::group_by(ID) %>%
+  arrange(value) %>%
+  dplyr::mutate(cumsum = cumsum(value))
+
 
 plotID <- function(i, save = TRUE) {
-  p <- dplyr::filter(df, ID == i) %>%
+  p <- dplyr::filter(df_OR, ID == i) %>%
     ggplot() +
     # geom_sf(
     #   countries, mapping=aes(),
@@ -92,7 +97,7 @@ plotID <- function(i, save = TRUE) {
 }
 
 # Make plots for all.
-lapply(unique(df$ID), plotID , save = T)
+lapply(unique(df_OR$ID), plotID , save = T)
 
 mydata_transformed %>%
   filter(dDprecip > -50) %>%
@@ -106,7 +111,6 @@ mydata_transformed %>%
 # Make aggregate surfaces -------------------------------------------------
 load(file.path(wd$bin, "mydata_clustered.Rdata"))
 
-
 mdf <- full_join(mydata_transformed, mydata_clustered)
 
 aggSurfaces <- lapply(unique(mdf$OriginCluster), function(cl){
@@ -114,7 +118,7 @@ aggSurfaces <- lapply(unique(mdf$OriginCluster), function(cl){
   indivs <- filter(mdf, OriginCluster == cl) %>%
     dplyr::select(SampleName) %>% unlist
 
-  cells <- filter(df, ID %in% indivs) %>%
+  cells <- filter(df_OR, ID %in% indivs) %>%
     dplyr::mutate(over = case_when(value >= 2/3 ~ 1, TRUE ~ 0))
 
   aggSurgface <- cells %>%
@@ -128,6 +132,7 @@ aggSurfaces <- lapply(unique(mdf$OriginCluster), function(cl){
 }) %>%
   bind_rows()
 
+fwrite(aggSurfaces, file = file.path(wd$bin, "aggSurfaces.csv"), row.names = F)
 
 p_aggSurfaces <- aggSurfaces %>%
   ggplot() +

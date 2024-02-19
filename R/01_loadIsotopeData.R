@@ -24,8 +24,6 @@ mydata <- full_join(meta, res, by = c("SampleName" = "Sample ID")) %>%
 
 
 
-
-
 # Georeferencing ----------------------------------------------------------
 
 # We conducted automatic georefencing followed by manual validation.
