@@ -5,7 +5,10 @@
 docs
 bin
 data
-figs
+figs/*
+!figs/fig1_v1.png
+!figs/fig2_v1.png
+!figs/fig3_v1.png
 .Rprofile
 tmp/*
 R_testing/*
