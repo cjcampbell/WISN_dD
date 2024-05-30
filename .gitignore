@@ -3,7 +3,9 @@
 .RData
 .Ruserdata
 docs
-bin
+bin/*
+!bin/maps/CombinedIsotope-OtherModelAssignments.grd
+!bin/maps/*.grd$
 data
 figs/*
 !figs/fig1_v1.png
