@@ -12,16 +12,23 @@ range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
 
 # Create maps. -----------------------------------------------------------
 
-isocat::isotopeAssignmentModel(
-  ID               = mydata_transformed$SampleName,
-  isotopeValue     = mydata_transformed$dDprecip,
-  SD_indv          = mydata_transformed$sdResid,
-  precip_raster    = myisoscape$isoscape,
-  precip_SD_raster = myisoscape$sd,
-  savePath         = mapPath,
-  additionalModels = range_raster,
-  nClusters = FALSE
-)
+pbapply::pblapply(1:nrow(mydata_transformed), function(x){
+  comboFileName <-  paste0("Combined_", mydata_transformed$SampleName[x])
+  if(!file.exists(file.path(mapPath, paste0(comboFileName, ".grd")))) {
+    isocat::isotopeAssignmentModel(
+      ID               = mydata_transformed$SampleName[x],
+      isotopeValue     = mydata_transformed$dDprecip[x],
+      SD_indv          = mydata_transformed$sdResid[x],
+      precip_raster    = myisoscape$isoscape,
+      precip_SD_raster = myisoscape$sd,
+      savePath         = mapPath,
+      additionalModels = range_raster,
+      additionalModel_name = comboFileName,
+      nClusters = FALSE
+    )
+  }
+})
+
 
 
 # Convert to other formats (for future analyses) --------------------------
@@ -34,7 +41,15 @@ maps_cropped <- list.files(
 # Also calculate probability quantiles.
 maps_cumulativeSum_stack <-
   lapply(1:nlayers(maps_cropped), function(i) {
-    isocat::makecumsumSurface(maps_cropped[[i]])
+    out <- maps_cropped[[i]] %>%
+      as.data.frame(xy=T, na.rm = F) %>%
+      arrange(.[[3]]) %>%
+      mutate(cumsum = cumsum(.[[3]])) %>%
+      dplyr::select(x,y,cumsum) %>%
+      rasterFromXYZ()
+    names(out) <- names(maps_cropped[[i]])
+    crs(out) <- crs(maps_cropped[[i]])
+    return(out)
     }) %>%
   stack()
 names(maps_cumulativeSum_stack) <- paste0(names(maps_cropped), "_csum")
@@ -69,7 +84,7 @@ maps_cropped_df_list <- pbmcapply::pbmclapply(
       dplyr::filter(!is.na(value))  %>%
       tidyr::separate(col = layer, into = c("ID", "method"), sep = "_(?=[^_]+$)")
     ID <- mdf$ID[1]
-    fwrite(mdf, file = file.path(wd$bin, "maps", paste0("df_list_", ID, ".csv")), row.names = F)
+    data.table::fwrite(mdf, file = file.path(wd$bin, "maps", paste0("df_list_", ID, ".csv")), row.names = F)
 })
 
 # maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%

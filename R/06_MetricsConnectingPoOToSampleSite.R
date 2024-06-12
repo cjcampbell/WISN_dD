@@ -37,13 +37,23 @@ getDistanceDirection <- function(
 # going to convert my surface coordinates (currently in equal area projections)
 # to lat/lon.
 
-rerun <- FALSE
-
 whichFiles <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T)
 
 wd$tmp_dist <- file.path(wd$bin,"tmp_dist")
 if(!dir.exists(wd$tmp_dist) ) dir.create(wd$tmp_dist)
 if(length(list.files(wd$tmp_dist)) > 1 ) stop("Files already exist in this directory!")
+
+# whichFiles2 <- list()
+# for( x in whichFiles ) {
+#
+#   #writeLines(x)
+#   s1 <- x %>%
+#     lapply(readRDS) %>%
+#     bind_rows() %>%
+#     dplyr::filter(method == "raw")
+#
+#   if(s1$ID[1] %in% SamplesToRerun) whichFiles2[[length(whichFiles2) + 1]] <- x
+# }
 
 for( x in whichFiles ) {
 
@@ -96,8 +106,10 @@ for( x in whichFiles ) {
 
 csumThreshold <- 0.25
 
-statsOut <- list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T) %>%
-  lapply(., function(x){
+statsOut <- list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T)
+
+# x <- statsOut[1]
+minDistDeets <- pbapply::pblapply(statsOut, function(x) {
     df <- fread(x)
     # Find minimum distance ----
     ## Convert to cumulative sum
@@ -141,7 +153,7 @@ statsOut <- list.files(wd$tmp_dist, pattern = "distDir_.*.csv", full.names = T) 
   }) %>%
   bind_rows()
 
-fwrite(statsOut, file = file.path(wd$bin, "distDirStats.csv"), row.names = F)
+fwrite(minDistDeets, file = file.path(wd$bin, "distDirStats.csv"), row.names = F)
 
 
 # Some plots --------------------------------------------------------------

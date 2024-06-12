@@ -17,7 +17,12 @@ if(sum(meta$SampleName %in% res$`Sample ID`) != nrow(res)) {
 }
 
 mydata <- full_join(meta, res, by = c("SampleName" = "Sample ID")) %>%
-  filter(!is.na(d2H))
+  filter(!is.na(d2H)) %>%
+  # Manually correct a brevard/Broward county error.
+  dplyr::mutate(
+    County = case_when(County == "Broward" & grepl("threeforks", SampleName) ~ "Brevard",
+    TRUE ~ County
+  ))
 
 # Optionally, check it out and make sure it looks okay.
 # View(mydata)
@@ -108,7 +113,7 @@ if(rerunAutomaticGeoreferencing) {
 
 ## Combine.
 df1 <- mydata %>%
-  select(c(Location, County)) %>%
+  dplyr::select(c(Location, County)) %>%
   distinct %>%
   dplyr::mutate(
     lookupAddress = case_when(

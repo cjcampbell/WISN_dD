@@ -21,25 +21,25 @@ if(download_GADM == TRUE){
   # saveRDS(my_extent_aea_st, file = file.path(wd$bin, "my_extent_aea_st.rds"))
 
   # Get GADM data to state level.
-  USA <- raster::getData('GADM', path = wd$bin, country='USA', level=0)
-  MEX <- raster::getData('GADM', path = wd$bin, country='MEX', level=0)
-  CAN <- raster::getData('GADM', path = wd$bin, country='CAN', level=0)
-  GTM <- raster::getData('GADM', path = wd$bin, country='GTM', level=0)
+  USA <- geodata::gadm('USA', path = bigDataStorage, level=0)
+  MEX <- geodata::gadm('MEX', path = bigDataStorage, level=0)
+  CAN <- geodata::gadm('CAN', path = bigDataStorage, level=0)
+  GTM <- geodata::gadm('GTM', path = bigDataStorage, level=0)
 
   # Prepare to remove areas outside of desired extent.
   # ## Remove Hawaii
-  USA_1 <- raster::getData('GADM', path = wd$bin, country='USA', level=1)
-  hawaii <- USA_1[USA_1@data$NAME_1 == "Hawaii",] # Select Hawaii
+  USA_1 <- geodata::gadm('USA', path = bigDataStorage, level=1)
+  hawaii <- dplyr::filter(USA_1, NAME_1 == "Hawaii") # Select Hawaii
   hawaii_simpl <- hawaii %>%
     sf::st_as_sf() %>%
     st_transform(crs = myCRS) %>%
     st_simplify(preserveTopology = FALSE, dTolerance = 5000) %>%
     st_buffer(dist = 1e6)
   # ## Remove water bodies.
-  USA_2 <- raster::getData('GADM', path = wd$bin, country='USA', level=2)
-  MEX_2 <- raster::getData('GADM', path = wd$bin, country='MEX', level=2)
-  CAN_2 <- raster::getData('GADM', path = wd$bin, country='CAN', level=2)
-  GTM_2 <- raster::getData('GADM', path = wd$bin, country='GTM', level=2)
+  USA_2 <- geodata::gadm('USA', path = bigDataStorage, level=2)
+  MEX_2 <- geodata::gadm('MEX', path = bigDataStorage, level=2)
+  CAN_2 <- geodata::gadm('CAN', path = bigDataStorage, level=2)
+  GTM_2 <- geodata::gadm('GTM', path = bigDataStorage, level=2)
   waterbodies <- lapply(list(USA_2,MEX_2,CAN_2,GTM_2), function(x){
     x[(x$ENGTYPE_2) == "Water body",]
   }) %>%
@@ -49,7 +49,7 @@ if(download_GADM == TRUE){
     st_simplify(preserveTopology = FALSE, dTolerance = 5000)
 
   # Combine into one polygon, convert to sf object.
-  NoAm <- raster::bind(
+  NoAm <- rbind(
     MEX, USA, CAN, GTM#, BLZ, SLV, HND, NIC
   ) %>%
     sf::st_as_sf(.) %>%
