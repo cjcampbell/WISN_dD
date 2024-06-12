@@ -78,6 +78,22 @@ numByClust <- mydata_clustered %>%
   dplyr::rename(Cluster = OriginCluster)
 
 
+locationIUCNData <- dir(wd$data, pattern = "redlist_species_data", full.names = T)
+
+# Load IUCN rangemap.
+# Convert to simple features object and reproject to myCRS.
+IUCNmaps <-
+  locationIUCNData %>%
+  st_read(layer = "data_0") %>%
+  st_as_sf(crs = 4326) %>%
+  st_transform(crs = myCRS) %>%
+  st_simplify(preserveTopology = TRUE, dTolerance = 5000) %>%
+  st_make_valid()
+
+breeding <- IUCNmaps %>% filter(SEASONAL %in% c(1,2))
+other <- IUCNmaps %>% filter(SEASONAL %in% c(3,4))
+range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
+
 myClustMaps <- lapply(1:4, function(i) {
 
   out <- clusterAggSurfaces %>%
@@ -310,18 +326,13 @@ appendCenteredLegend(sampledRegionMaps) %>%
   ggarrange(plotlist = c(.), ncol = 1) %>%
   ggsave(filename = file.path(wd$figs, "sampledRegionsByCluster.png"), height = 8, width = 6)
 
-
-
 ggsave(sampleLegend, filename = file.path(wd$figs, "sampledRegionsColors.png"))
 
-
 distByDirAndCluster2 <- appendCenteredLegend(distByDirAndCluster)
-
 
 ggarrange(plotlist = distByDirAndCluster2[1:4], ncol = 1) %>%
   ggarrange(., commonDistDirLegend, ncol = 1, heights = c(1,0.4)) %>%
   ggsave(filename = file.path(wd$figs, "distancesByCluster.png"), height = 8, width = 6)
-
 
 
 # Create cluster-specific rows --------------------------------------------
@@ -368,3 +379,4 @@ p1 <-
   )
 
 ggsave(p1, filename = file.path(wd$figs, "alignmentTest.png"), width = 7, height = 7)
+

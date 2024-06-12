@@ -212,18 +212,6 @@ allResults %>%
   ggplot() +
   geom_point(aes(x=Date, y = dist_km))
 
-  geom_histogram(aes(dist_km, group = factor(OriginCluster), fill = factor(OriginCluster)), binwidth = 250) +
-  scale_x_continuous("Minimum distance traveled (km)", breaks = seq(0,4000,by = 500), limits = c(0,5000)) +
-  scale_y_continuous(expand = c(0,1)) +
-  scale_fill_viridis_d("OriginCluster") +
-  theme_minimal() +
-  theme(
-    legend.position = c(0.1,0.8),
-    axis.ticks = element_line(),
-    panel.grid = element_blank()
-  )
-
-
 # Clusters by year --------------------------------------------------------
 
 allResults %>%

@@ -198,7 +198,6 @@ togetherMap <- ggdraw(insetMap) +
 ggsave(togetherMap, file= file.path(wd$figs, "samplingmap.png"), width = 6, height = 4, dpi = 400)
 
 
-
 # Add photo ---------------------------------------------------------------
 
 togetherMap2 <- plot_grid(

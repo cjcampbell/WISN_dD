@@ -4,11 +4,15 @@ library(sf)
 library(ggpubr)
 library(ggstar)
 
-#if(!exists("maps_df")) maps_df <- readRDS(file.path(wd$bin, "maps_df.rds"))
+if(!exists("maps_df")) {
+  maps_df <- list.files(wd$tmp_df, pattern = "df_list.*rds$", full.names = T) %>%
+    lapply(readRDS) %>%
+    bind_rows()
+  }
 
 # This is specific to my local computer.
 source("~/WISN_dD/.Rprofile")
-NoAm <- readRDS( file.path(bigDataStorage, "NoAm_maps", "NoAm.rds")) %>%
+NoAm <- readRDS( file.path(wd$bin, "NoAm.rds")) %>%
   st_transform(myCRS)
 countries <- rnaturalearth::countries110 %>%
   st_as_sf() %>%
@@ -97,7 +101,7 @@ plotID <- function(i, save = TRUE) {
 }
 
 # Make plots for all.
-lapply(unique(df_OR$ID), plotID , save = T)
+lapply(SamplesToRerun, plotID , save = T)
 
 mydata_transformed %>%
   filter(dDprecip > -50) %>%
