@@ -1,6 +1,6 @@
 library(data.table)
 library(terra)
-
+library(cowplot)
 allResults <- fread(file.path(wd$bin, "allResults.csv")) %>%
   dplyr::mutate(
     westOrigin = case_when(
@@ -94,12 +94,12 @@ insetMap <- ggplot() +
   scale_fill_manual(
     breaks = c("Wetland", "Open water"),
     values = c("#98D7D5","#6C7FB2"),
-    labels = c("Freshwater wetland", "Open water")
+    labels = c("Freshwater\nwetland", "Open water")
     ) +
   scale_color_manual(
     breaks = c("Wetland", "Open water"),
     values = c("#98D7D5","#6C7FB2"),
-    labels = c("Freshwater wetland", "Open water")
+    labels = c("Freshwater\nwetland", "Open water")
     ) +
   # Plot state lines
   geom_sf(states, mapping = aes(), fill = NA) +
@@ -123,8 +123,11 @@ insetMap <- ggplot() +
     panel.grid = element_blank(),
     axis.title = element_blank(),
     axis.text = element_blank(),
-    legend.position = c(0.2,0.65),
-    legend.title = element_blank()
+    #legend.position = c(0.2,0.65),
+    legend.position = c(0.65,0.1),
+    legend.text = element_text(color = "black"),
+    legend.title = element_blank(),
+    plot.margin = unit(c(0,0,0,0), "mm")
     )
 
 
@@ -136,27 +139,32 @@ nonbreeding <- IUCNmaps %>%
   dplyr::filter(SEASONAL %in% c(1,3)) %>%
   st_union()
 
+darker.col = function(color, how.much = 75){
+  colorRampPalette(c(color, "black"))(100)[how.much]
+}
 seasoncolors <- c(
   "#688E26",
   "#FAA613",
   "#550527"
 )
 
+
 main_map <- ggplot() +
   geom_sf(countries,   mapping = aes(), fill = NA) +
   geom_sf(dplyr::filter(IUCNmaps, SEASONAL %in% c(2)), mapping = aes(), alpha = 0.5, color = seasoncolors[1], fill = seasoncolors[1]) +
   geom_sf(dplyr::filter(IUCNmaps, SEASONAL %in% c(3)), mapping = aes(), alpha = 0.5, color = seasoncolors[2], fill = seasoncolors[2]) +
   geom_sf(dplyr::filter(IUCNmaps, SEASONAL %in% c(1)), mapping = aes(), alpha = 0.5, color = seasoncolors[3], fill = seasoncolors[3]) +
-  geom_text(mapping = aes(x=0, y = 1.5e6),      label = "Breeding",    color = seasoncolors[1], hjust = 0.5, size = 4) +
-  geom_text(mapping = aes(x=0, y = -0.5e6),     label = "Nonbreeding", color = seasoncolors[2], hjust = 0.5, size = 4) +
-  geom_text(mapping = aes(x=-1.48e6, y = 0.5e6), label = "Year-round",  color = seasoncolors[3], hjust = 0.5, size = 4) +
+  geom_text(mapping = aes(x=0, y = 1.5e6),      label = "Breeding",     color = darker.col(seasoncolors[1]), hjust = 0.5, size = 4) +
+  geom_text(mapping = aes(x=0, y = -0.5e6),     label = "Nonbreeding",  color = darker.col(seasoncolors[2]), hjust = 0.5, size = 4) +
+  geom_text(mapping = aes(x=-1.48e6, y = 0.5e6), label = "Year-round",  color = darker.col(seasoncolors[3]), hjust = 0.5, size = 4) +
   coord_sf(
     xlim = c(-4.5e6, 4.5e6),
     ylim = c(-3.8e6, 4e6)
   ) +
   theme_void() +
   theme(
-    panel.background = element_rect(fill = "white", color = "black", linewidth = 0.5)
+    panel.background = element_rect(fill = "white", color = "black", linewidth = 0.5),
+    plot.margin = unit(c(0,0,0,0), "mm")
   ) +
   # Draw line around inset
    geom_rect(
@@ -180,22 +188,22 @@ photo1 <- draw_image(snipePhoto)
 
 # Combine, no photo-----------------------------------------------------------------
 
-library(cowplot)
+# library(cowplot)
+#
+# togetherMap <- ggdraw(insetMap, xlim = c(0.2,1)) +
+#   draw_plot(
+#     main_map,
+#     x = 0.05, y = 0,
+#     width  = 0.65, height = 0.65
+#     ) +
+#   draw_plot_label(
+#     c("B", "A"),
+#     c(0.05, 0.2),
+#     c(0.55, 0.99),
+#     size = 12
+#   )
 
-togetherMap <- ggdraw(insetMap) +
-  draw_plot(
-    main_map,
-    x = 0, y = 0,
-    width  = 0.5, height = 0.55
-    ) +
-  draw_plot_label(
-    c("B", "A"),
-    c(0.05, 0.2),
-    c(0.55, 0.99),
-    size = 12
-  )
-
-ggsave(togetherMap, file= file.path(wd$figs, "samplingmap.png"), width = 6, height = 4, dpi = 400)
+# ggsave(togetherMap, file= file.path(wd$figs, "samplingmap.png"), width = 6.5, height = 4, dpi = 400)
 
 
 # Add photo ---------------------------------------------------------------
@@ -203,22 +211,22 @@ ggsave(togetherMap, file= file.path(wd$figs, "samplingmap.png"), width = 6, heig
 togetherMap2 <- plot_grid(
   {ggdraw() + photo1},
   {
-    ggdraw(insetMap) +
+    ggdraw(insetMap + theme(plot.margin = unit(c(0,0,0,1), "cm"))) +
       draw_plot(
         main_map,
-        x = -0.05, y = -0.05,
-        width  = 0.5, height = 0.55
+        x = -0.06, y = -0.05,
+        width  = 0.575, height = 0.65
       )
   }
   ) +
   draw_plot_label(
     c("A",  "C", "B"),
-    c(0.05, 0.48, 0.50),
-    c(0.99, 0.44, 0.99),
+    c(0.05, 0.48, 0.52),
+    c(0.99, 0.53, 0.99),
     size = 12
   )
 
-ggsave(togetherMap2, file= file.path(wd$figs, "samplingmap2.png"), width = 8, height = 4, dpi = 400)
+ggsave(togetherMap2, file= file.path(wd$figs, "samplingmap2.png"), width = 8, height = 4, dpi = 600)
 
 
 
