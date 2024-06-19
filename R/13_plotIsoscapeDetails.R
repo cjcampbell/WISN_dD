@@ -29,6 +29,15 @@ map <- ggplot() +
 
 # Extract percentages -----------------------------------------------------
 
+precip_df <- iso_cropped %>%
+  terra::project("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") %>%
+  as.data.frame(xy=T) %>%
+  dplyr::mutate(
+    under100 = factor(case_when(x < -100 ~ 1, TRUE ~0)),
+    lat_bin = cut(y, breaks = mybreaks),
+    precip_bin = cut(d2h_GS, breaks = seq(-200,200,by=20))
+  )
+
 feather_df <- iso_feather %>%
   terra::project("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") %>%
   as.data.frame(xy=T) %>%
