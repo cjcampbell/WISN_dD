@@ -3,7 +3,7 @@
 theme_set(
   theme(plot.margin=unit(c(0,0,0,0), "mm"))
 )
-
+library(ggpubr)
 
 load( file.path(wd$bin, "mydata_clustered.Rdata"), verbose = T )
 namesByGroup <- mydata_clustered %>%
@@ -380,3 +380,55 @@ p1 <-
 
 ggsave(p1, filename = file.path(wd$figs, "alignmentTest.png"), width = 7, height = 7)
 
+
+## New alignment -----
+
+p2 <-
+  {myClustMaps[[1]]         + theme(legend.position = "none") } +
+  {sampledRegionMaps[[1]]   + theme(legend.position = "none") + ylab(NULL)} +
+  {distByDirAndCluster[[1]] + theme(legend.position = "none") + xlab(NULL) } +
+
+  {myClustMaps[[2]]         + theme(legend.position = "none") } +
+  {sampledRegionMaps[[2]]   + theme(legend.position = "none") + ylab(NULL)} +
+  {distByDirAndCluster[[2]] + theme(legend.position = "none") + xlab(NULL) } +
+
+  {myClustMaps[[3]]         + theme(legend.position = "none") } +
+  {sampledRegionMaps[[3]]   + theme(legend.position = "none") + ylab(NULL)} +
+  {distByDirAndCluster[[3]] + theme(legend.position = "none") + xlab(NULL) } +
+
+  {myClustMaps[[4]]         + theme(legend.position = "none") } +
+  {sampledRegionMaps[[4]]   + theme(legend.position = "none") + ylab(NULL)} +
+  {distByDirAndCluster[[4]] + theme(legend.position = "none") + xlab(NULL) } +
+
+
+  plot_layout(
+    widths = c(1,1,1,1),
+    design =c(
+
+      area(t=1,b=1,l=1,r=1),
+      area(t=1,b=1,l=2,r=2),
+      area(t=1,b=1,l=3,r=3.2),
+
+      area(t=2,b=2,l=1,r=1),
+      area(t=2,b=2,l=2,r=2),
+      area(t=2,b=2,l=3,r=3.4),
+
+      area(t=3,b=3,l=1,r=1),
+      area(t=3,b=3,l=2,r=2),
+      area(t=3,b=3,l=3,r=3.6),
+
+      area(t=4,b=4,l=1,r=1),
+      area(t=4,b=4,l=2,r=2),
+      area(t=4,b=4,l=3,r=3.8)
+    )
+  )
+
+ggsave(p2, filename = file.path(wd$figs, "alignmentTest2.png"), width = 7, height = 7)
+
+
+
+
+# Confirm sample sizes ----------------------------------------------------
+
+mydata_clustered %>%
+  count(OriginCluster)
