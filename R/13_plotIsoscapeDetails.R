@@ -2,6 +2,8 @@ library(terra)
 library(tidyterra)
 library(ggpubr)
 
+theme_set(theme_minimal())
+
 load( file.path(wd$bin, "my_isoscapes.RData") )
 range_raster <- readRDS( file.path(wd$bin, "range_raster.rds" ) )
 iso_cropped <- mask(myisoscape$isoscape, range_raster) %>% rast()
@@ -18,8 +20,10 @@ mybreaks <- seq(-200,200,by=10)
 
 map <- ggplot() +
   tidyterra::geom_spatraster_contour_filled(iso_feather, mapping = aes(), breaks = mybreaks) +
-  scale_fill_viridis_d("Feather isoscape values", option = "plasma") +
+  scale_fill_viridis_d(expression("Feather isoscape values (\u2030)"), option = "plasma") +
   geom_sf(myline, mapping = aes(), color = "black", linetype = "dotted", size = 2) +
+  scale_x_continuous(breaks = c(-100)) +
+  scale_y_continuous(breaks = seq(20,90,by=10)) +
   coord_sf(
     xlim = c(extent(range_raster)[1]+1.5e6, extent(range_raster)[2]-2.4e6),
     ylim = c(extent(range_raster)[3]+5e6, extent(range_raster)[4]-1.8e6)
@@ -28,6 +32,7 @@ map <- ggplot() +
 
 
 # Extract percentages -----------------------------------------------------
+set.seed(42)
 
 precip_df <- iso_cropped %>%
   terra::project("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") %>%
@@ -50,7 +55,8 @@ p_lon <- feather_df %>%
   ggplot() +
   aes(y = d2h_GS, x = under100, group = under100) +
   geom_jitter(aes(color = d2h_GS), height = 0, width = 0.3) +
-  scale_color_viridis_c("Feather isoscape values", option = "plasma", limits = c(-200,-10)) +
+  scale_color_viridis_c(expression("Feather isoscape values (\u2030)"), option = "plasma", limits = c(-200,-10)) +
+  scale_y_continuous(expression("Feather isoscape values (\u2030)")) +
   geom_violin(fill = NA) +
   geom_boxplot(fill = NA) +
   scale_x_discrete("Longitude", labels = c(" < -100", " >= -100"))
@@ -60,10 +66,15 @@ p_lat <- feather_df %>%
   ggplot() +
   aes(y = d2h_GS, x = lat_bin, group = lat_bin) +
   geom_jitter(aes(color = d2h_GS), height = 0, width = 0.3) +
-  scale_color_viridis_c("Feather isoscape values", option = "plasma", limits = c(-200,-10)) +
+  scale_color_viridis_c(expression("Feather isoscape values (\u2030)"), option = "plasma", limits = c(-200,-10)) +
+  scale_y_continuous(expression("Feather isoscape values (\u2030)")) +
   geom_violin(fill = NA) +
   geom_boxplot(fill = NA) +
   scale_x_discrete("Latitude")
 
-out <-ggarrange(map, ggarrange(p_lon, p_lat, ncol = 1, common.legend = T), ncol = 2 , widths = c(2,1))
-ggsave(out, filename = file.path("figs", "featherIsoscape_details.png"))
+# out <-ggarrange(map, ggarrange(p_lon, p_lat, ncol = 1, common.legend = T), ncol = 2 , widths = c(2.5,1))
+# ggsave(out, filename = file.path("figs", "featherIsoscape_details.png"), dpi = 100, width = 10, height = 10)
+
+
+out2 <- ggarrange(map, ggarrange(p_lon, p_lat, ncol = 2, common.legend = T, legend = "bottom"), ncol = 1 , heights = c(1.5,1))
+ggsave(out2, filename = file.path("figs", "featherIsoscape_details2.png"), dpi = 600, width = 8, height = 8)
