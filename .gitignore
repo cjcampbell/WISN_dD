@@ -12,6 +12,7 @@ figs/*
 !figs/fig2_v1.png
 !figs/fig3_v1.png
 !figs/fig_s1.png
+figs_archive/
 .Rprofile
 tmp/*
 R_testing/*
